@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Buddy Card - 泄露的宠物系统解析</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+SC:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --dim: #8b949e;
+    --accent: #58a6ff;
+    --common: #8b949e;
+    --uncommon: #3fb950;
+    --rare: #58a6ff;
+    --epic: #bc8cff;
+    --legendary: #f0883e;
+    --shiny: #f8e520;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans SC', sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  .pixel { font-family: 'Press Start 2P', monospace; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 80px 20px 60px;
+    background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(88,166,255,0.08) 0%, transparent 70%);
+  }
+  .hero h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(1.2rem, 4vw, 2.2rem);
+    color: var(--accent);
+    margin-bottom: 16px;
+    text-shadow: 0 0 20px rgba(88,166,255,0.3);
+    position: relative;
+  }
+  .hero .subtitle {
+    color: var(--dim);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto 24px;
+    position: relative;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(240,136,62,0.15);
+    color: var(--legendary);
+    border: 1px solid rgba(240,136,62,0.3);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    position: relative;
+  }
+
+  /* ASCII Buddy showcase */
+  .buddy-showcase {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding: 40px 20px;
+  }
+  .buddy-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    width: 200px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .buddy-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  }
+  .buddy-card.shiny {
+    border-color: var(--shiny);
+    box-shadow: 0 0 15px rgba(248,229,32,0.15);
+  }
+  .buddy-card .ascii-art {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    line-height: 1.4;
+    white-space: pre;
+    margin-bottom: 12px;
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .buddy-card .species-name {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+  .buddy-card .rarity-tag {
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 10px;
+    display: inline-block;
+  }
+  .rarity-common { color: var(--common); border: 1px solid var(--common); }
+  .rarity-uncommon { color: var(--uncommon); border: 1px solid var(--uncommon); }
+  .rarity-rare { color: var(--rare); border: 1px solid var(--rare); }
+  .rarity-epic { color: var(--epic); border: 1px solid var(--epic); }
+  .rarity-legendary { color: var(--legendary); border: 1px solid var(--legendary); }
+
+  /* Sections */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  section {
+    padding: 48px 0;
+  }
+  section h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(0.8rem, 2.5vw, 1.1rem);
+    color: var(--accent);
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  section h3 {
+    color: var(--text);
+    font-size: 1.1rem;
+    margin: 20px 0 10px;
+  }
+
+  /* Info grid */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .info-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .info-box h4 {
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+  }
+  .info-box p, .info-box ul {
+    color: var(--dim);
+    font-size: 0.9rem;
+  }
+  .info-box ul {
+    padding-left: 18px;
+  }
+  .info-box li {
+    margin-bottom: 4px;
+  }
+
+  /* Stat bars */
+  .stat-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 10px;
+  }
+  .stat-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    width: 90px;
+    color: var(--dim);
+    text-align: right;
+  }
+  .stat-bar-bg {
+    flex: 1;
+    height: 14px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .stat-bar {
+    height: 100%;
+    border-radius: 7px;
+    transition: width 1s ease;
+  }
+  .stat-val {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    width: 30px;
+    color: var(--text);
+  }
+
+  /* Code blocks */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #c9d1d9;
+    margin: 16px 0;
+    line-height: 1.5;
+  }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .str { color: #a5d6ff; }
+  .code-block .num { color: #79c0ff; }
+  .code-block .cmt { color: #8b949e; }
+
+  /* Rarity table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.9rem;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    color: var(--accent);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 30px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 24px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px;
+    top: 6px;
+    width: 12px;
+    height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+  }
+  .timeline-item .date {
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+  .timeline-item .desc {
+    color: var(--dim);
+    font-size: 0.9rem;
+  }
+
+  /* Other features */
+  .feature-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .feature-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .feature-item h4 {
+    margin-bottom: 8px;
+  }
+  .feature-item .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 8px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+  }
+
+  /* Warning box */
+  .warning-box {
+    background: rgba(240,136,62,0.08);
+    border: 1px solid rgba(240,136,62,0.3);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+  }
+  .warning-box h4 {
+    color: var(--legendary);
+    margin-bottom: 8px;
+  }
+  .warning-box p {
+    color: var(--dim);
+    font-size: 0.9rem;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--dim);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+  }
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  /* Animations */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .buddy-card:nth-child(odd) .ascii-art { animation: float 3s ease-in-out infinite; }
+  .buddy-card:nth-child(even) .ascii-art { animation: float 3s ease-in-out 1.5s infinite; }
+
+  @keyframes glow {
+    0%, 100% { text-shadow: 0 0 20px rgba(88,166,255,0.3); }
+    50% { text-shadow: 0 0 30px rgba(88,166,255,0.5); }
+  }
+  .hero h1 { animation: glow 4s ease-in-out infinite; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .buddy-card { width: 160px; padding: 16px; }
+    .buddy-card .ascii-art { font-size: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<header class="hero">
+  <h1>CLAUDE BUDDY CARD</h1>
+  <p class="subtitle">Claude Code 泄露源码中最有趣的发现 — 一个完整的 Tamagotchi 风格虚拟宠物系统</p>
+  <span class="badge">2026.03.31 Source Leak</span>
+</header>
+
+<!-- Buddy Showcase -->
+<div class="buddy-showcase">
+  <div class="buddy-card">
+    <div class="ascii-art" style="color: var(--common);">
+  &gt;o)
+  (_&gt;
+  '' ''
+    </div>
+    <div class="species-name">Duck</div>
+    <span class="rarity-tag rarity-common">&#9733; Common</span>
+  </div>
+  <div class="buddy-card">
+    <div class="ascii-art" style="color: var(--rare);">
+  /\_/\
+ ( o.o )
+  &gt; ^ &lt;
+    </div>
+    <div class="species-name">Cat</div>
+    <span class="rarity-tag rarity-rare">&#9733;&#9733;&#9733; Rare</span>
+  </div>
+  <div class="buddy-card">
+    <div class="ascii-art" style="color: var(--epic);">
+  /\  /\
+ {  `'  }
+ {  ,.  }
+  `UUU`
+    </div>
+    <div class="species-name">Dragon</div>
+    <span class="rarity-tag rarity-epic">&#9733;&#9733;&#9733;&#9733; Epic</span>
+  </div>
+  <div class="buddy-card">
+    <div class="ascii-art" style="color: var(--uncommon);">
+    ~~
+  (o  o)
+ /|    |\
+  d  b
+    </div>
+    <div class="species-name">Axolotl</div>
+    <span class="rarity-tag rarity-uncommon">&#9733;&#9733; Uncommon</span>
+  </div>
+  <div class="buddy-card shiny">
+    <div class="ascii-art" style="color: var(--shiny);">
+    *
+  /o_o\
+ | &gt;w&lt; |
+  \_^_/
+    </div>
+    <div class="species-name">Nebulynx</div>
+    <span class="rarity-tag rarity-legendary">&#9733;&#9733;&#9733;&#9733;&#9733; Legendary</span>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="container">
+
+  <!-- Leak Overview -->
+  <section>
+    <h2>// 泄露事件概述</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="date">2026.03.26</div>
+        <div class="desc">CMS 配置错误导致 ~3,000 个内部文件泄露，暴露了未发布的 "Claude Mythos" 模型信息</div>
+      </div>
+      <div class="timeline-item">
+        <div class="date">2026.03.31 04:23 ET</div>
+        <div class="desc">安全研究员 Chaofan Shou 发现 Claude Code v2.1.88 npm 包中包含 59.8MB source map 文件，暴露全部原始 TypeScript 源码</div>
+      </div>
+      <div class="timeline-item">
+        <div class="date">数小时内</div>
+        <div class="desc">~512,000 行代码、1,900+ 文件被镜像到 GitHub，获得 41,500+ forks，近千万浏览</div>
+      </div>
+      <div class="timeline-item">
+        <div class="date">同日</div>
+        <div class="desc">npm 上 axios 包遭供应链攻击（00:21-03:29 UTC），恶意版本含 RAT 木马</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Buddy System Deep Dive -->
+  <section>
+    <h2>// BUDDY 宠物系统详解</h2>
+
+    <h3>系统架构</h3>
+    <div class="info-grid">
+      <div class="info-box">
+        <h4>Bones（骨骼 - 确定性数据）</h4>
+        <p>由 <code>hash(userId + SALT)</code> 派生的外观和属性数据，永不存储，每次重新计算。防止用户篡改配置文件。</p>
+        <p style="margin-top:8px;color:var(--accent);font-size:0.8rem;">SALT = 'friend-2026-401'</p>
+      </div>
+      <div class="info-box">
+        <h4>Soul（灵魂 - AI 生成数据）</h4>
+        <p>首次孵化时由 Claude 生成的名字和性格描述，持久化保存在 <code>config.companion</code> 中。</p>
+      </div>
+    </div>
+
+    <h3>18 个物种</h3>
+    <div class="code-block">
+<span class="kw">export const</span> SPECIES = [
+  duck, goose, blob, cat, dragon, octopus, owl, penguin,
+  turtle, snail, ghost, axolotl, capybara, cactus, robot,
+  rabbit, mushroom, chonk,
+] <span class="kw">as const</span>
+<span class="cmt">// 物种名使用 String.fromCharCode() 编码以绕过构建时字符串扫描</span>
+    </div>
+
+    <h3>稀有度分布</h3>
+    <table>
+      <tr><th>稀有度</th><th>概率</th><th>星级</th><th>属性下限</th></tr>
+      <tr><td style="color:var(--common)">Common</td><td>60%</td><td>&#9733;</td><td>5</td></tr>
+      <tr><td style="color:var(--uncommon)">Uncommon</td><td>25%</td><td>&#9733;&#9733;</td><td>15</td></tr>
+      <tr><td style="color:var(--rare)">Rare</td><td>10%</td><td>&#9733;&#9733;&#9733;</td><td>25</td></tr>
+      <tr><td style="color:var(--epic)">Epic</td><td>4%</td><td>&#9733;&#9733;&#9733;&#9733;</td><td>35</td></tr>
+      <tr><td style="color:var(--legendary)">Legendary</td><td>1%</td><td>&#9733;&#9733;&#9733;&#9733;&#9733;</td><td>50</td></tr>
+    </table>
+    <p style="color:var(--dim);font-size:0.85rem;">Shiny 变体：任何稀有度都有 1% 概率触发闪光。Shiny Legendary 概率 = 1% &times; 1% = <strong style="color:var(--shiny)">0.01%</strong></p>
+
+    <h3>五维属性系统</h3>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin:16px 0;">
+      <div class="stat-row">
+        <span class="stat-label">DEBUGGING</span>
+        <div class="stat-bar-bg"><div class="stat-bar" style="width:85%;background:linear-gradient(90deg,#58a6ff,#79c0ff)"></div></div>
+        <span class="stat-val">85</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">PATIENCE</span>
+        <div class="stat-bar-bg"><div class="stat-bar" style="width:42%;background:linear-gradient(90deg,#3fb950,#56d364)"></div></div>
+        <span class="stat-val">42</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">CHAOS</span>
+        <div class="stat-bar-bg"><div class="stat-bar" style="width:97%;background:linear-gradient(90deg,#f0883e,#f8e520)"></div></div>
+        <span class="stat-val">97</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">WISDOM</span>
+        <div class="stat-bar-bg"><div class="stat-bar" style="width:63%;background:linear-gradient(90deg,#bc8cff,#d2a8ff)"></div></div>
+        <span class="stat-val">63</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">SNARK</span>
+        <div class="stat-bar-bg"><div class="stat-bar" style="width:78%;background:linear-gradient(90deg,#ff7b72,#ffa198)"></div></div>
+        <span class="stat-val">78</span>
+      </div>
+      <p style="color:var(--dim);font-size:0.8rem;margin-top:12px;">示例属性卡：Epic Dragon (Shiny)。每只 Buddy 有一个峰值属性 (+50) 和一个弱势属性 (-10)。</p>
+    </div>
+
+    <h3>PRNG 算法：Mulberry32</h3>
+    <div class="code-block">
+<span class="kw">function</span> mulberry32(seed: <span class="str">number</span>): () =&gt; <span class="str">number</span> {
+  <span class="kw">let</span> a = seed &gt;&gt;&gt; <span class="num">0</span>
+  <span class="kw">return function</span> () {
+    a |= <span class="num">0</span>
+    a = (a + <span class="num">0x6d2b79f5</span>) | <span class="num">0</span>
+    <span class="kw">let</span> t = Math.imul(a ^ (a &gt;&gt;&gt; <span class="num">15</span>), <span class="num">1</span> | a)
+    t = (t + Math.imul(t ^ (t &gt;&gt;&gt; <span class="num">7</span>), <span class="num">61</span> | t)) ^ t
+    <span class="kw">return</span> ((t ^ (t &gt;&gt;&gt; <span class="num">14</span>)) &gt;&gt;&gt; <span class="num">0</span>) / <span class="num">4294967296</span>
+  }
+}
+<span class="cmt">// 种子 = hashString(userId + 'friend-2026-401')</span>
+<span class="cmt">// 同一用户永远获得同一只 Buddy</span>
+    </div>
+
+    <h3>Sprite 渲染</h3>
+    <div class="info-grid">
+      <div class="info-box">
+        <h4>ASCII 艺术规格</h4>
+        <ul>
+          <li>5 行高 &times; 12 字符宽</li>
+          <li>每个物种 3 帧动画</li>
+          <li><code>{E}</code> 占位符替换为眼睛字符</li>
+          <li>第 0 行为帽子槽位</li>
+        </ul>
+      </div>
+      <div class="info-box">
+        <h4>装饰系统</h4>
+        <ul>
+          <li>6 种眼睛: <code style="letter-spacing:4px">&#183; &#10022; &#215; &#9673; @ &#176;</code></li>
+          <li>8 种帽子: crown, tophat, propeller, halo, wizard, beanie, tinyduck</li>
+          <li>Common 无帽子</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Other Discoveries -->
+  <section>
+    <h2>// 其他重要发现</h2>
+    <div class="feature-list">
+      <div class="feature-item">
+        <h4 style="color:var(--epic)">KAIROS 自主守护模式</h4>
+        <span class="tag" style="background:rgba(188,140,255,0.15);color:var(--epic)">Feature Flag</span>
+        <p style="color:var(--dim);font-size:0.9rem;">用户空闲时 Claude Code 持续运行，执行"记忆整合"——合并观察、消除矛盾、将模糊洞察转化为确切事实。</p>
+      </div>
+      <div class="feature-item">
+        <h4 style="color:var(--legendary)">Anti-Distillation 反蒸馏</h4>
+        <span class="tag" style="background:rgba(240,136,62,0.15);color:var(--legendary)">Security</span>
+        <p style="color:var(--dim);font-size:0.9rem;">向系统提示注入伪造工具定义，污染任何试图通过录制 API 流量训练竞争模型的数据集。</p>
+      </div>
+      <div class="feature-item">
+        <h4 style="color:var(--rare)">Undercover Mode 卧底模式</h4>
+        <span class="tag" style="background:rgba(88,166,255,0.15);color:var(--rare)">Stealth</span>
+        <p style="color:var(--dim);font-size:0.9rem;">防止 AI 在参与开源项目时泄露内部代号。系统提示："Do not blow your cover."</p>
+      </div>
+      <div class="feature-item">
+        <h4 style="color:var(--uncommon)">API DRM 哈希校验</h4>
+        <span class="tag" style="background:rgba(63,185,80,0.15);color:var(--uncommon)">Transport</span>
+        <p style="color:var(--dim);font-size:0.9rem;">API 请求中包含计算哈希，由 Bun HTTP 层注入，服务端验证请求来自真正的 Claude Code 二进制文件。</p>
+      </div>
+      <div class="feature-item">
+        <h4 style="color:var(--shiny)">44 个隐藏 Feature Flags</h4>
+        <span class="tag" style="background:rgba(248,229,32,0.15);color:var(--shiny)">Unreleased</span>
+        <p style="color:var(--dim);font-size:0.9rem;">ULTRAPLAN、coordinator mode、agent swarms、workflow scripts 等功能已完成编译，等待发布。</p>
+      </div>
+      <div class="feature-item">
+        <h4 style="color:var(--common)">内部模型代号</h4>
+        <span class="tag" style="background:rgba(139,148,158,0.15);color:var(--common)">Intel</span>
+        <p style="color:var(--dim);font-size:0.9rem;">Claude 4.6 = Capybara, Opus 4.6 = Fennec, 未发布测试模型 = Numbat。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Warning -->
+  <section>
+    <h2>// 安全警告</h2>
+    <div class="warning-box">
+      <h4>npm 供应链攻击</h4>
+      <p>2026年3月31日 00:21&ndash;03:29 UTC 期间通过 npm 安装/更新 Claude Code 的用户，可能下载到了含远程访问木马 (RAT) 的恶意 axios 版本（1.14.1 / 0.30.4）。请使用 Anthropic 官方安装器。</p>
+    </div>
+  </section>
+
+  <!-- Sources -->
+  <section>
+    <h2>// 参考来源</h2>
+    <ul style="list-style:none;padding:0;">
+      <li style="margin-bottom:10px;"><a href="https://venturebeat.com/technology/claude-codes-source-code-appears-to-have-leaked-heres-what-we-know" style="color:var(--accent);text-decoration:none;" target="_blank">VentureBeat &mdash; Claude Code's source code appears to have leaked</a></li>
+      <li style="margin-bottom:10px;"><a href="https://www.theregister.com/2026/03/31/anthropic_claude_code_source_code/" style="color:var(--accent);text-decoration:none;" target="_blank">The Register &mdash; Anthropic accidentally exposes Claude Code source code</a></li>
+      <li style="margin-bottom:10px;"><a href="https://fortune.com/2026/03/31/anthropic-source-code-claude-code-data-leak-second-security-lapse-days-after-accidentally-revealing-mythos/" style="color:var(--accent);text-decoration:none;" target="_blank">Fortune &mdash; Anthropic leaks its own AI coding tool's source code</a></li>
+      <li style="margin-bottom:10px;"><a href="https://alex000kim.com/posts/2026-03-31-claude-code-source-leak/" style="color:var(--accent);text-decoration:none;" target="_blank">Alex Kim's Blog &mdash; The Claude Code Source Leak</a></li>
+      <li style="margin-bottom:10px;"><a href="https://cybernews.com/security/anthropic-claude-code-source-leak/" style="color:var(--accent);text-decoration:none;" target="_blank">Cybernews &mdash; Full source code for Anthropic's Claude Code leaks</a></li>
+      <li style="margin-bottom:10px;"><a href="https://github.com/Kuberwastaken/claude-code" style="color:var(--accent);text-decoration:none;" target="_blank">GitHub Mirror &mdash; Kuberwastaken/claude-code</a></li>
+    </ul>
+  </section>
+
+</div>
+
+<footer>
+  <p>Claude Buddy Card &mdash; 基于公开泄露信息的研究整理</p>
+  <p style="margin-top:8px;">Hosted on <a href="https://pages.github.com/" target="_blank">GitHub Pages</a> &bull; No domain needed</p>
+</footer>
+
+</body>
+</html>
